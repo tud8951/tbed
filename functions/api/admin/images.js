@@ -5,14 +5,18 @@ export async function onRequestGet({ request, env }) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
   }
   if (env?.db) {
-    const { results } = await env.db.prepare("SELECT id, url, ts, likes FROM images ORDER BY ts DESC").all();
-    return new Response(JSON.stringify(results || []), { headers: { "Content-Type": "application/json" } });
+    let { results } = await env.db.prepare("SELECT id, url, ts, likes FROM images ORDER BY ts DESC").all();
+    results = (results || []).map(r => ({ ...r, url: `/api/i/${r.id}` }));
+    return new Response(JSON.stringify(results), { headers: { "Content-Type": "application/json" } });
   }
   if (env?.kv) {
     const list = await env.kv.list({ prefix: "image:" });
     const keys = list.keys || [];
     const records = await Promise.all(keys.map(k => env.kv.get(k.name).then(v => (v ? JSON.parse(v) : null))));
-    const items = records.filter(Boolean).sort((a, b) => b.ts - a.ts);
+    const items = records
+      .filter(Boolean)
+      .sort((a, b) => b.ts - a.ts)
+      .map(r => ({ ...r, url: `/api/i/${r.id}` }));
     return new Response(JSON.stringify(items), { headers: { "Content-Type": "application/json" } });
   }
   return new Response(JSON.stringify([]), { headers: { "Content-Type": "application/json" } });

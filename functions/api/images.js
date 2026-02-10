@@ -6,10 +6,11 @@ export async function onRequestGet({ request, env }) {
     // 优先使用 D1
     if (env?.db) {
       const order = sort === "hot" ? "likes DESC, ts DESC" : "ts DESC";
-      const { results } = await env.db
+      let { results } = await env.db
         .prepare(`SELECT id, url, ts, likes FROM images ORDER BY ${order}`)
         .all();
-      return new Response(JSON.stringify(results || []), { headers: { "Content-Type": "application/json" } });
+      results = (results || []).map(r => ({ ...r, url: `/api/i/${r.id}` }));
+      return new Response(JSON.stringify(results), { headers: { "Content-Type": "application/json" } });
     }
 
     // 回退至 KV（仅本地或未绑定 D1 时）
@@ -19,7 +20,7 @@ export async function onRequestGet({ request, env }) {
       const records = await Promise.all(
         keys.map(k => env.kv.get(k.name).then(v => (v ? JSON.parse(v) : null)))
       );
-      const items = records.filter(Boolean);
+      const items = records.filter(Boolean).map(r => ({ ...r, url: `/api/i/${r.id}` }));
 
     if (sort === "hot") {
       items.sort((a, b) => {
