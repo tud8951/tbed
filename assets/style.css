@@ -1,0 +1,173 @@
+:root {
+  --bg: #0f1216;
+  --card: #151a21;
+  --text: #e6eaf0;
+  --muted: #9aa3af;
+  --accent: #4f8cff;
+  --accent-2: #ff6b6b;
+  --border: #2a3240;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+.header {
+  padding: 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.header h1 { margin: 0 0 6px; font-size: 22px; }
+.header p { margin: 0; color: var(--muted); }
+
+.upload { padding: 20px 16px; border-bottom: 1px solid var(--border); }
+.upload-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+}
+.dropzone {
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  transition: border-color .2s, color .2s, background .2s;
+  min-height: 160px;
+}
+.dropzone:hover { border-color: var(--accent); color: var(--text); background: #121720; cursor: pointer; }
+.dropzone.dragover { border-color: var(--accent); background: #111826; color: var(--text); }
+.dz-text { font-size: 14px; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+.preview {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #0b0f14;
+}
+.preview img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  background: #0a0d11;
+}
+.preview-meta {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+.actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.status { color: var(--muted); }
+.hidden { display: none; }
+
+@media (max-width: 860px) {
+  .upload-card { grid-template-columns: 1fr; }
+  .preview img { height: 200px; }
+}
+@media (max-width: 640px) {
+  .gallery {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+  .preview img { height: 180px; }
+  .btn { width: 100%; }
+  .actions { flex-direction: column; align-items: stretch; }
+  .status { text-align: center; }
+}
+
+.tabs {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.tab-buttons { display: flex; gap: 8px; }
+.tab-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.tab-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.gallery {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background: #0a0d11;
+}
+.card .meta {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.meta .time {
+  color: var(--muted);
+  font-size: 12px;
+}
+.like {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.like.liked {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}

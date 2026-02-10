@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BigJackson的共享图片站</title>
+    <link rel="stylesheet" href="assets/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <h1>BigJackson的在线共享图片站</h1>
+      <p>上传图片，分享至主页；支持点赞与热门/最新分类</p>
+    </header>
+
+    <section class="upload">
+      <div class="upload-card">
+        <div id="dropzone" class="dropzone">
+          <div class="dz-text">拖拽图片到此或点击选择</div>
+          <button id="chooseBtn" class="btn">选择图片</button>
+          <input id="fileInput" type="file" accept="image/png,image/jpeg" hidden />
+        </div>
+        <div id="preview" class="preview hidden">
+          <img id="previewImg" alt="预览">
+          <div class="preview-meta">
+            <span id="previewName"></span>
+            <span id="previewSize"></span>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="uploadBtn" class="btn primary">上传</button>
+          <div id="uploadStatus" class="status"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tabs">
+      <div class="tab-buttons">
+        <button class="tab-btn" data-sort="latest">最新发布</button>
+        <button class="tab-btn" data-sort="hot">最热门</button>
+      </div>
+    </section>
+
+    <main id="gallery" class="gallery"></main>
+
+    <script src="assets/app.js"></script>
+  </body>
+</html>

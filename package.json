@@ -1,0 +1,23 @@
+{
+  "name": "shared-image-site",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "db:prepare": "wrangler d1 execute db --local --file d1/schema.sql",
+    "dev": "wrangler pages dev .",
+    "deploy": "wrangler pages deploy ."
+  },
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "eslint": "^10.0.0",
+    "prettier": "^3.8.1",
+    "wrangler": "^4.64.0"
+  }
+}
