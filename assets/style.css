@@ -156,6 +156,7 @@ html, body {
   color: var(--muted);
   font-size: 12px;
 }
+.meta .actions { display: inline-flex; align-items: center; gap: 8px; }
 .like {
   display: inline-flex;
   align-items: center;
@@ -170,4 +171,30 @@ html, body {
 .like.liked {
   border-color: var(--accent-2);
   color: var(--accent-2);
+}
+.download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+.lightbox {
+  position: fixed;
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(10, 13, 17, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.lightbox img {
+  max-width: 92vw;
+  max-height: 92vh;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
 }

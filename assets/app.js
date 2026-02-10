@@ -27,9 +27,10 @@ function renderGallery(items) {
         <img src="/api/i/${item.id}" alt="image" loading="lazy">
         <div class="meta">
           <span class="time">${formatTime(item.ts)}</span>
-          <button class="like ${isLiked ? "liked" : ""}" data-id="${item.id}">
-            ❤️ <span class="count">${item.likes}</span>
-          </button>
+          <div class="actions">
+            <a class="download" href="/api/i/${item.id}" download="img-${item.id}.jpg">下载</a>
+            <button class="like ${isLiked ? "liked" : ""}" data-id="${item.id}">❤️ <span class="count">${item.likes}</span></button>
+          </div>
         </div>
       </article>`;
   }).join("");
@@ -69,11 +70,24 @@ function bindEvents() {
       loadImages(sort);
     });
   });
+  const lb = el("#lightbox");
+  const lbImg = el("#lightboxImg");
   el("#gallery").addEventListener("click", (ev) => {
+    const img = ev.target.closest(".card img");
+    if (img) {
+      lbImg.src = img.src;
+      lb.classList.remove("hidden");
+      return;
+    }
     const btn = ev.target.closest(".like");
-    if (!btn) return;
-    const id = btn.dataset.id;
-    like(id, btn);
+    if (btn) {
+      const id = btn.dataset.id;
+      like(id, btn);
+    }
+  });
+  lb.addEventListener("click", () => {
+    lb.classList.add("hidden");
+    lbImg.src = "";
   });
   const dz = el("#dropzone");
   const chooseBtn = el("#chooseBtn");

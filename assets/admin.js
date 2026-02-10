@@ -20,7 +20,10 @@ function render(items) {
       <img src="/api/i/${x.id}" alt="image">
       <div class="meta">
         <span>${formatTime(x.ts)} · ❤️ ${x.likes}</span>
-        <button class="btn danger" data-id="${x.id}">删除</button>
+        <div class="actions">
+          <a class="download" href="/api/i/${x.id}" download="img-${x.id}.jpg">下载</a>
+          <button class="btn danger" data-id="${x.id}">删除</button>
+        </div>
       </div>
     </div>
   `).join("");
@@ -63,6 +66,14 @@ function bind() {
     }
   });
   el("#adminList").addEventListener("click", async (ev) => {
+    const lb = el("#lightbox");
+    const lbImg = el("#lightboxImg");
+    const img = ev.target.closest(".item img");
+    if (img) {
+      lbImg.src = img.src;
+      lb.classList.remove("hidden");
+      return;
+    }
     const btn = ev.target.closest("button[data-id]");
     if (!btn) return;
     const id = btn.dataset.id;
@@ -74,6 +85,10 @@ function bind() {
     } finally {
       btn.disabled = false;
     }
+  });
+  el("#lightbox").addEventListener("click", () => {
+    el("#lightbox").classList.add("hidden");
+    el("#lightboxImg").src = "";
   });
 }
 
