@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>管理后台</title>
+    <link rel="icon" href="favicon.jpg" type="image/jpeg" />
+    <link rel="stylesheet" href="assets/style.css" />
+    <style>
+      .admin { padding: 16px; }
+      .login { display: flex; gap: 8px; padding: 16px; border-bottom: 1px solid var(--border); }
+      .login input { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); }
+      .btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; }
+      .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .status { color: var(--muted); }
+      .list { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+      .item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+      .item img { width: 100%; height: 180px; object-fit: cover; background: #0a0d11; }
+      .item .meta { padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; }
+      .danger { border-color: var(--accent-2); color: var(--accent-2); }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <h1>管理后台</h1>
+      <p>输入密码进入后台，进行图片删除操作</p>
+    </header>
+    <section class="admin">
+      <div class="login">
+        <input id="pwd" type="password" placeholder="输入后台密码" />
+        <button id="enterBtn" class="btn primary">进入后台</button>
+        <span id="loginStatus" class="status"></span>
+      </div>
+      <div id="adminPanel" class="hidden">
+        <div class="list" id="adminList"></div>
+      </div>
+    </section>
+    <script src="assets/admin.js"></script>
+  </body>
+</html>
