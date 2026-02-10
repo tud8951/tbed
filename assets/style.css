@@ -192,6 +192,7 @@ html, body {
   justify-content: center;
   z-index: 999;
 }
+.lightbox.hidden { display: none; }
 .lightbox img {
   max-width: 92vw;
   max-height: 92vh;
