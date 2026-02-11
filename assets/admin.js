@@ -1,6 +1,10 @@
 const el = (s) => document.querySelector(s);
 const els = (s) => Array.from(document.querySelectorAll(s));
 let token = "";
+let adminPages = [];
+let adminCursors = [];
+let adminPageIndex = 0;
+const adminPageSize = 20;
 
 function formatTime(ts) {
   const d = new Date(ts);
@@ -44,12 +48,18 @@ function render(items) {
   `).join("");
 }
 
-async function load() {
-  const items = await fetchJSON("/api/admin/images", {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  render(items);
-  // resolve locations
+async function fetchAdminPage(cursorToken = "") {
+  const u = new URL("/api/admin/images", window.location.origin);
+  u.searchParams.set("limit", String(adminPageSize));
+  if (cursorToken) u.searchParams.set("cursor", cursorToken);
+  const res = await fetch(u.pathname + u.search, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(await res.text().catch(() => "请求失败"));
+  const items = await res.json();
+  const nc = res.headers.get("X-Next-Cursor") || "";
+  return { items, nextCursor: nc };
+}
+
+async function resolveLocations() {
   const btns = els(".ip-toggle");
   for (const b of btns) {
     const ip = b.dataset.ip || "";
@@ -67,6 +77,64 @@ async function load() {
       b.textContent = ip;
     }
   }
+}
+
+async function resetAdminPagination() {
+  adminPages = [];
+  adminCursors = [];
+  adminPageIndex = 0;
+  const { items, nextCursor } = await fetchAdminPage("");
+  adminPages.push(items);
+  adminCursors.push(nextCursor);
+  render(items);
+  await resolveLocations();
+  updateAdminPagerUI();
+}
+
+function updateAdminPagerUI() {
+  const info = el("#adminPageInfo");
+  if (info) info.textContent = `第 ${adminPageIndex + 1} 页`;
+  const prev = el("#adminPrev");
+  const next = el("#adminNext");
+  if (prev) prev.disabled = adminPageIndex <= 0;
+  const hasNext = !!adminCursors[adminPageIndex];
+  if (next) next.disabled = !hasNext;
+  const pn = el("#adminPageNumbers");
+  if (pn) {
+    let html = adminPages.map((_, i) => `<button class="page-num${i === adminPageIndex ? " active" : ""}" data-idx="${i}">${i + 1}</button>`).join("");
+    if (hasNext) {
+      const nextNum = adminPages.length + 1;
+      html += `<button class="page-num" data-idx="${adminPages.length}">${nextNum}</button>`;
+    }
+    pn.innerHTML = html;
+  }
+}
+
+async function adminNextPage() {
+  const hasNext = !!adminCursors[adminPageIndex];
+  if (!hasNext) return;
+  const tokenNext = adminCursors[adminPageIndex];
+  if (adminPages[adminPageIndex + 1]) {
+    adminPageIndex += 1;
+    render(adminPages[adminPageIndex]);
+    await resolveLocations();
+    updateAdminPagerUI();
+    return;
+  }
+  const { items, nextCursor } = await fetchAdminPage(tokenNext);
+  adminPages.push(items);
+  adminCursors.push(nextCursor);
+  adminPageIndex += 1;
+  render(items);
+  await resolveLocations();
+  updateAdminPagerUI();
+}
+
+function adminPrevPage() {
+  if (adminPageIndex <= 0) return;
+  adminPageIndex -= 1;
+  render(adminPages[adminPageIndex] || []);
+  updateAdminPagerUI();
 }
 
 async function del(id) {
@@ -88,7 +156,7 @@ function bind() {
     el("#loginStatus").textContent = "正在验证...";
     try {
       await loadSettings();
-      await load();
+      await resetAdminPagination();
       el("#loginStatus").textContent = "";
       try { localStorage.setItem("admin_token", token); } catch {}
       const box = document.querySelector(".login");
@@ -218,6 +286,26 @@ function bind() {
       }
     }
   });
+  const prevBtn = el("#adminPrev");
+  const nextBtn = el("#adminNext");
+  if (prevBtn) prevBtn.addEventListener("click", () => adminPrevPage());
+  if (nextBtn) nextBtn.addEventListener("click", () => adminNextPage());
+  const pn = el("#adminPageNumbers");
+  if (pn) {
+    pn.addEventListener("click", (ev) => {
+      const btn = ev.target.closest(".page-num[data-idx]");
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.idx, 10);
+      if (!Number.isFinite(idx) || idx < 0) return;
+      if (adminPages[idx]) {
+        adminPageIndex = idx;
+        render(adminPages[adminPageIndex]);
+        updateAdminPagerUI();
+        return;
+      }
+      adminNextPage();
+    });
+  }
   el("#lightbox").addEventListener("click", () => {
     el("#lightbox").classList.add("hidden");
     el("#lightboxImg").src = "";
@@ -233,7 +321,7 @@ function init() {
     (async () => {
       try {
         await loadSettings();
-        await load();
+        await resetAdminPagination();
         el("#loginStatus").textContent = "";
         const box = document.querySelector(".login");
         if (box) box.classList.add("hidden");

@@ -4,8 +4,17 @@ export async function onRequestGet({ request, env }) {
   if (!pass || !auth.startsWith("Bearer ") || auth.slice(7) !== pass) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
   }
+  const u = new URL(request.url);
+  const limitParam = parseInt(u.searchParams.get("limit") || "20", 10);
+  const limit = Number.isFinite(limitParam) ? Math.max(1, Math.min(50, limitParam)) : 20;
+  const cursor = u.searchParams.get("cursor") || "";
   if (env?.db) {
-    let { results } = await env.db.prepare("SELECT id, url, ts, likes FROM images ORDER BY ts DESC").all();
+    let offset = 0;
+    if (cursor && cursor.startsWith("d1:")) {
+      const off = parseInt(cursor.slice(3), 10);
+      if (Number.isFinite(off) && off >= 0) offset = off;
+    }
+    let { results } = await env.db.prepare("SELECT id, url, ts, likes FROM images ORDER BY ts DESC LIMIT ? OFFSET ?").bind(limit, offset).all();
     const mapExt = (u) => {
       try {
         const p = new URL(u).pathname.split("/").pop() || "";
@@ -18,10 +27,15 @@ export async function onRequestGet({ request, env }) {
       const metas = await Promise.all(results.map(r => env.kv.get(`image_meta:${r.id}`).then(v => (v ? JSON.parse(v) : null)).catch(() => null)));
       results = results.map((r, i) => ({ ...r, ip: metas[i]?.ip || "" }));
     }
-    return new Response(JSON.stringify(results), { headers: { "Content-Type": "application/json" } });
+    const next = results.length === limit ? `d1:${offset + results.length}` : "";
+    const headers = new Headers({ "Content-Type": "application/json" });
+    if (next) headers.set("X-Next-Cursor", next);
+    return new Response(JSON.stringify(results), { headers });
   }
   if (env?.kv) {
-    const list = await env.kv.list({ prefix: "image:" });
+    const opts = { prefix: "image:", limit };
+    if (cursor && cursor.startsWith("kv:")) opts.cursor = cursor.slice(3);
+    const list = await env.kv.list(opts);
     const keys = list.keys || [];
     const records = await Promise.all(keys.map(k => env.kv.get(k.name).then(v => (v ? JSON.parse(v) : null))));
     const items = records
@@ -45,7 +59,10 @@ export async function onRequestGet({ request, env }) {
       }
       return r;
     }));
-    return new Response(JSON.stringify(filled), { headers: { "Content-Type": "application/json" } });
+    const next = list.list_complete ? "" : `kv:${list.cursor || ""}`;
+    const headers = new Headers({ "Content-Type": "application/json" });
+    if (next) headers.set("X-Next-Cursor", next);
+    return new Response(JSON.stringify(filled), { headers });
   }
   return new Response(JSON.stringify([]), { headers: { "Content-Type": "application/json" } });
 }

@@ -60,7 +60,12 @@ function updatePagerUI() {
   if (next) next.disabled = !hasNext;
   const pn = el("#pageNumbers");
   if (pn) {
-    pn.innerHTML = pages.map((_, i) => `<button class="page-num${i === pageIndex ? " active" : ""}" data-idx="${i}">${i + 1}</button>`).join("");
+    let html = pages.map((_, i) => `<button class="page-num${i === pageIndex ? " active" : ""}" data-idx="${i}">${i + 1}</button>`).join("");
+    if (hasNext) {
+      const nextNum = pages.length + 1;
+      html += `<button class="page-num" data-idx="${pages.length}">${nextNum}</button>`;
+    }
+    pn.innerHTML = html;
   }
 }
 async function fetchPage(sort, cursorToken) {
@@ -272,7 +277,10 @@ function bindEvents() {
         pageIndex = idx;
         renderGallery(pages[pageIndex], true);
         updatePagerUI();
+        return;
       }
+      const active = document.querySelector(".tab-btn.active")?.dataset.sort || "hot";
+      goNext(active);
     });
   }
 
