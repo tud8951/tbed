@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /api/i/
+Disallow: /admin
+Disallow: /api/admin/
+Disallow: /api/upload
+Disallow: /api/like
+Disallow: /api/settings
+Disallow: /api/images
+Disallow: /api/env
+Disallow: /api/count
