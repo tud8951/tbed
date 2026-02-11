@@ -11,11 +11,36 @@ function formatTime(ts) {
 
 let nextCursor = "";
 let loadingMore = false;
+let imgObserver = null;
 const cacheBust = (() => {
   const m = (location.search || "").match(/[?&]cb=([^&]+)/);
   return m ? decodeURIComponent(m[1]) : "";
 })();
 const addCb = (url) => cacheBust ? url + (url.indexOf("?") >= 0 ? "&" : "?") + "cb=" + encodeURIComponent(cacheBust) : url;
+function setupLazyObserver() {
+  if (typeof window !== "undefined" && "IntersectionObserver" in window) {
+    imgObserver = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          const src = img.getAttribute("data-src");
+          if (src) {
+            img.src = src;
+            img.removeAttribute("data-src");
+            img.classList.remove("lazy");
+            obs.unobserve(img);
+          }
+        }
+      });
+    }, { rootMargin: "200px 0px" });
+  } else {
+    imgObserver = null;
+  }
+}
+function lazyLoadImages() {
+  if (!imgObserver) return;
+  els("img.lazy").forEach(img => imgObserver.observe(img));
+}
 
 async function loadImages(sort = "latest", reset = true) {
   const url = new URL(`/api/images`, window.location.origin);
@@ -37,9 +62,10 @@ function renderGallery(items, reset = true) {
   const liked = JSON.parse(localStorage.getItem("liked_ids") || "[]");
   const html = items.map(item => {
     const isLiked = liked.includes(item.id);
+    const thumb = addCb(`/api/i/${item.id}?w=480&q=65`);
     return `
       <article class="card" data-id="${item.id}">
-        <img class="lazy" data-src="${addCb(`/api/i/${item.id}?w=480&q=65`)}" alt="image" loading="lazy" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
+        ${imgObserver ? `<img class="lazy" data-src="${thumb}" alt="image" loading="lazy" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">` : `<img src="${thumb}" alt="image" loading="lazy">`}
         <div class="meta">
           <span class="time">${formatTime(item.ts)}</span>
           <div class="actions">
@@ -156,31 +182,6 @@ function bindEvents() {
   });
   io.observe(sentinel);
 
-  const imgObserver = new IntersectionObserver((entries, obs) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const img = entry.target;
-        const src = img.getAttribute("data-src");
-        if (src) {
-          img.src = src;
-          img.removeAttribute("data-src");
-          img.classList.remove("lazy");
-          obs.unobserve(img);
-        }
-      }
-    });
-  }, { rootMargin: "200px 0px" });
-  function lazyLoadImages() {
-    els("img.lazy").forEach(img => imgObserver.observe(img));
-  }
-  const rl = el("#reloadLink");
-  if (rl) {
-    rl.addEventListener("click", (e) => {
-      e.preventDefault();
-      const href = location.pathname + "?cb=" + Date.now();
-      location.replace(href);
-    });
-  }
   const showPreview = (file) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -282,6 +283,7 @@ function bindEvents() {
 function init() {
   setActiveTab("hot");
   bindEvents();
+  setupLazyObserver();
   nextCursor = "";
   loadImages("hot", true);
 }
