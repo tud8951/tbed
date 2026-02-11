@@ -38,7 +38,7 @@ function render(items) {
     <div class="item" data-id="${x.id}">
       <img src="/api/i/${x.id}?w=480&q=75" alt="image">
       <div class="meta">
-        <span>${x.ip || "-"} · ${formatTime(x.ts)} · ❤️ <input class="like-input" type="number" min="0" value="${x.likes}" style="width:80px" /> <button class="btn save-like" data-id="${x.id}">保存点赞</button></span>
+        <span>${x.ip || "-"} · ${formatTime(x.ts)} · ❤️ <input class="like-input" type="number" min="0" value="${x.likes}" style="width:80px" /> <button class="btn primary save-like" data-id="${x.id}">保存点赞</button></span>
         <div class="actions">
           <a class="download" href="/api/i/${x.id}" download="img-${x.id}.jpg">下载</a>
           <button class="btn danger" data-id="${x.id}">删除</button>

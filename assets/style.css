@@ -63,6 +63,7 @@ html, body {
   cursor: pointer;
 }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.danger { background: transparent; border-color: var(--accent-2); color: var(--accent-2); }
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 .preview {
   border: 1px solid var(--border);
