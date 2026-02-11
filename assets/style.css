@@ -25,15 +25,7 @@ html, body {
 .header h1 { margin: 0 0 6px; font-size: 22px; }
 .header p { margin: 0; color: var(--muted); }
 .site-count { margin-top: 6px; color: var(--muted); }
-.gh-icon-inline {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  vertical-align: middle;
-  color: #000;
-  margin-right: 6px;
-  text-decoration: none;
-}
+/* GitHub 图标已移除，保留说明链接样式由默认文本继承 */
 
 .upload { padding: 20px 16px; border-bottom: 1px solid var(--border); }
 .upload-card {
@@ -229,6 +221,14 @@ html, body {
 .meta .time {
   color: var(--muted);
   font-size: 12px;
+}
+.ip-copy {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0 6px;
+  border-radius: 6px;
 }
 .meta .actions { display: inline-flex; align-items: center; gap: 8px; }
 .like {

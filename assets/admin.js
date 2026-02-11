@@ -41,7 +41,7 @@ function render(items) {
     <div class="item" data-id="${x.id}">
       <img src="/api/i/${x.id}?w=480&q=75" alt="image">
       <div class="meta">
-        <span>${x.ip || "-"} · ${formatTime(x.ts)} · ❤️ <input class="like-input" type="number" min="0" value="${x.likes}" style="width:80px" /> <button class="btn primary save-like" data-id="${x.id}">保存点赞</button></span>
+        <span><button class="ip-copy" data-ip="${x.ip || ""}" title="点击复制">${x.ip || "-"}</button> · ${formatTime(x.ts)} · ❤️ <input class="like-input" type="number" min="0" value="${x.likes}" style="width:80px" /> <button class="btn primary save-like" data-id="${x.id}">保存点赞</button></span>
         <div class="actions">
           <a class="download" href="/api/i/${x.id}" download="img-${x.id}.jpg">下载</a>
           <button class="btn danger" data-id="${x.id}">删除</button>
@@ -238,6 +238,30 @@ function bind() {
     if (img) {
       lbImg.src = img.src;
       lb.classList.remove("hidden");
+      return;
+    }
+    const ipBtn = ev.target.closest(".ip-copy");
+    if (ipBtn) {
+      const ip = ipBtn.dataset.ip || "";
+      if (!ip) return;
+      const text = ipBtn.textContent;
+      ipBtn.disabled = true;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(ip);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = ip;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+        ipBtn.textContent = "已复制";
+        setTimeout(() => { ipBtn.textContent = text; }, 1200);
+      } finally {
+        ipBtn.disabled = false;
+      }
       return;
     }
     const btn = ev.target.closest("button[data-id]");
