@@ -14,6 +14,7 @@
       <p>
         <a href="/admin" style="color: var(--accent); text-decoration: none;">进入管理后台</a>
       </p>
+      <p id="siteCount" class="site-count"></p>
     </header>
 
     <section class="upload">
@@ -43,9 +44,17 @@
         <button class="tab-btn" data-sort="hot">最热门</button>
       </div>
     </section>
+    <section class="pager">
+      <div class="pager-bar">
+        <button id="prevPage" class="btn">上一页</button>
+        <span id="pageInfo" class="status">第 1 页</span>
+        <button id="nextPage" class="btn">下一页</button>
+      </div>
+      <div id="pageNumbers" class="page-numbers"></div>
+    </section>
 
     <main id="gallery" class="gallery"></main>
-    <div id="sentinel" style="height:1px;"></div>
+    <div id="sentinel" style="height:1px; display:none;"></div>
     <div id="lightbox" class="lightbox hidden"><img id="lightboxImg" alt="image"></div>
 
     <script src="assets/app.js"></script>

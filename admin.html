@@ -41,6 +41,12 @@
             <input id="filterEnable" type="checkbox" />
             开启图片过滤
           </label>
+          <label style="display:flex;align-items:center;gap:8px;margin-left:16px;">
+            <span>过滤账号</span>
+            <select id="seSelect" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);">
+              <option value="0">加载中...</option>
+            </select>
+          </label>
           <span id="settingsStatus" class="status"></span>
         </div>
         <div class="list" id="adminList"></div>

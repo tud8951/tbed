@@ -6,6 +6,18 @@ export async function onRequestGet({ request, env }) {
   }
   let allow = true;
   let filter = false;
+  let seIndex = 0;
+  const parseList = (v) => {
+    if (!v) return [];
+    const s = String(v).trim();
+    try {
+      const j = JSON.parse(s);
+      return Array.isArray(j) ? j.map(x => String(x)) : [];
+    } catch {
+      return [];
+    }
+  };
+  const users = parseList(env.SIGHTENGINE_USER);
   if (env?.kv) {
     const v = await env.kv.get("settings:allow_upload");
     if (v !== null && v !== undefined) {
@@ -15,8 +27,15 @@ export async function onRequestGet({ request, env }) {
     if (f !== null && f !== undefined) {
       filter = f === "1" || f === "true";
     }
+    const si = await env.kv.get("settings:sightengine_index");
+    if (si !== null && si !== undefined) {
+      const n = parseInt(si, 10);
+      if (Number.isFinite(n) && n >= 0) seIndex = n;
+    }
   }
-  return new Response(JSON.stringify({ allow_upload: allow, filter_enabled: filter }), { headers: { "Content-Type": "application/json" } });
+  if (!Number.isFinite(seIndex) || seIndex < 0) seIndex = 0;
+  if (users.length && seIndex >= users.length) seIndex = 0;
+  return new Response(JSON.stringify({ allow_upload: allow, filter_enabled: filter, sightengine_index: seIndex, sightengine_users: users }), { headers: { "Content-Type": "application/json" } });
 }
 
 export async function onRequestPost({ request, env }) {
@@ -40,6 +59,16 @@ export async function onRequestPost({ request, env }) {
       await env.kv.put("settings:filter_enabled", enable ? "1" : "0");
     }
     return new Response(JSON.stringify({ filter_enabled: enable }), { headers: { "Content-Type": "application/json" } });
+  }
+  if (op === "set_sightengine_index") {
+    let idx = parseInt(body?.index, 10);
+    if (!Number.isFinite(idx) || idx < 0) {
+      return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+    if (env?.kv) {
+      await env.kv.put("settings:sightengine_index", String(idx));
+    }
+    return new Response(JSON.stringify({ sightengine_index: idx }), { headers: { "Content-Type": "application/json" } });
   }
   if (op === "set_likes") {
     const id = body?.id;

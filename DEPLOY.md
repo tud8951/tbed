@@ -38,10 +38,10 @@
 
 ## 路由与功能概览
 - 前端页面
-  - `/`：首页（默认展示“最热门”），无限滚动懒加载
+  - `/`：首页（默认展示“最热门”），分页浏览与懒加载缩略图
   - `/admin`：管理后台（需要密码）
 - API
-  - `GET /api/images?sort=hot|latest&limit=20&cursor=...`：图片列表（支持分页）
+  - `GET /api/images?sort=hot|latest&limit=20&cursor=...`：图片列表（支持分页；limit 由前端按设备选择）
   - `POST /api/upload`：上传图片（JPG/PNG ≤ 5MB）
   - `GET /api/i/:id?w=640&h=...&q=75`：图片代理与加速（支持 Cloudflare 边缘缩放）
   - `POST /api/like`：点赞计数 +1
@@ -85,7 +85,16 @@
    - 若 Telegraph 都失败且配置了 `TGBOT`/`TGGROUP`，回退 Telegram 直链
    - 成功后会写入 D1/KV，并向 Telegram 推送图片
 5) 图片过滤（可选）
-   - 在后台启用“开启图片过滤”，并配置 Sightengine 的 `SIGHTENGINE_USER`/`SIGHTENGINE_KEY`
+   - 在后台启用“开启图片过滤”，支持多个 Sightengine 账号：
+     - `SIGHTENGINE_USER=["user1","user2"]`
+     - `SIGHTENGINE_KEY=["secret1","secret2"]`
+     - 后台下拉切换当前使用账号，保存在 KV `settings:sightengine_index`
+   - 单值回退：若为单个字符串 `SIGHTENGINE_USER` / `SIGHTENGINE_KEY` 也可正常使用
+
+6) 分页行为
+   - 移动端每页 10 张
+   - 桌面端每页固定 21 张
+   - 页码数字可直接跳转（显示已加载页的数字），也可使用上一页/下一页
    - 上传时先审核，通过再写入与推送；不合规返回 415
 
 ## 常见问题

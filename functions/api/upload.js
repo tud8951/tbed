@@ -95,13 +95,35 @@ export async function onRequestPost({ request, env }) {
     if (filterEnabled) {
       let ok = true;
       let detail = "";
-      if (env?.SIGHTENGINE_USER && env?.SIGHTENGINE_KEY) {
+      const parseList = (v) => {
+        if (!v) return [];
+        const s = String(v).trim();
+        try {
+          const j = JSON.parse(s);
+          return Array.isArray(j) ? j.map(x => String(x)) : [];
+        } catch {
+          return [];
+        }
+      };
+      const users = parseList(env.SIGHTENGINE_USER);
+      const keys = parseList(env.SIGHTENGINE_KEY);
+      let idx = 0;
+      if (env?.kv) {
+        const si = await env.kv.get("settings:sightengine_index");
+        if (si !== null && si !== undefined) {
+          const n = parseInt(si, 10);
+          if (Number.isFinite(n) && n >= 0) idx = n;
+        }
+      }
+      const apiUser = users.length ? users[Math.min(idx, users.length - 1)] : (env.SIGHTENGINE_USER || "");
+      const apiKey = keys.length ? keys[Math.min(idx, keys.length - 1)] : (env.SIGHTENGINE_KEY || "");
+      if (apiUser && apiKey) {
         try {
           const usp = new URLSearchParams();
           usp.set("models", "nudity");
           usp.set("url", url);
-          usp.set("api_user", String(env.SIGHTENGINE_USER));
-          usp.set("api_secret", String(env.SIGHTENGINE_KEY));
+          usp.set("api_user", String(apiUser));
+          usp.set("api_secret", String(apiKey));
           const r = await fetch(`https://api.sightengine.com/1.0/check.json?${usp.toString()}`, { headers: { "Accept": "application/json" } });
           if (r.ok) {
             const j = await r.json().catch(() => null);

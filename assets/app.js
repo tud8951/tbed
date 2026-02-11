@@ -9,9 +9,11 @@ function formatTime(ts) {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-let nextCursor = "";
-let loadingMore = false;
 let imgObserver = null;
+let pages = [];
+let cursors = [];
+let pageIndex = 0;
+let pageSize = 20;
 const cacheBust = (() => {
   const m = (location.search || "").match(/[?&]cb=([^&]+)/);
   return m ? decodeURIComponent(m[1]) : "";
@@ -42,20 +44,78 @@ function lazyLoadImages() {
   els("img.lazy").forEach(img => imgObserver.observe(img));
 }
 
-async function loadImages(sort = "latest", reset = true) {
+function computePageSize() {
+  if (window.matchMedia && window.matchMedia("(max-width: 640px)").matches) {
+    return 10;
+  }
+  return 21;
+}
+function updatePagerUI() {
+  const info = el("#pageInfo");
+  if (info) info.textContent = `第 ${pageIndex + 1} 页`;
+  const prev = el("#prevPage");
+  const next = el("#nextPage");
+  if (prev) prev.disabled = pageIndex <= 0;
+  const hasNext = !!cursors[pageIndex];
+  if (next) next.disabled = !hasNext;
+  const pn = el("#pageNumbers");
+  if (pn) {
+    pn.innerHTML = pages.map((_, i) => `<button class="page-num${i === pageIndex ? " active" : ""}" data-idx="${i}">${i + 1}</button>`).join("");
+  }
+}
+async function fetchPage(sort, cursorToken) {
   const url = new URL(`/api/images`, window.location.origin);
   url.searchParams.set("sort", sort);
-  url.searchParams.set("limit", "20");
-  if (!reset && nextCursor) url.searchParams.set("cursor", nextCursor);
+  url.searchParams.set("limit", String(pageSize));
+  if (cursorToken) url.searchParams.set("cursor", cursorToken);
   const res = await fetch(url.pathname + url.search);
   if (!res.ok) {
-    el("#gallery").innerHTML = `<div class="status">加载图片失败</div>`;
-    return;
+    throw new Error("加载图片失败");
   }
   const items = await res.json();
   const nc = res.headers.get("X-Next-Cursor") || "";
-  nextCursor = nc;
-  renderGallery(items, reset);
+  return { items, nextCursor: nc };
+}
+async function resetPagination(sort) {
+  pages = [];
+  cursors = [];
+  pageIndex = 0;
+  pageSize = computePageSize();
+  try {
+    const { items, nextCursor: nc } = await fetchPage(sort, "");
+    pages.push(items);
+    cursors.push(nc);
+    renderGallery(items, true);
+  } catch {
+    el("#gallery").innerHTML = `<div class="status">加载图片失败</div>`;
+  }
+  updatePagerUI();
+}
+async function goNext(sort) {
+  if (!cursors[pageIndex]) return;
+  const nextToken = cursors[pageIndex];
+  if (pages[pageIndex + 1]) {
+    pageIndex += 1;
+    renderGallery(pages[pageIndex], true);
+    updatePagerUI();
+    return;
+  }
+  try {
+    const { items, nextCursor: nc } = await fetchPage(sort, nextToken);
+    pages.push(items);
+    cursors.push(nc);
+    pageIndex += 1;
+    renderGallery(items, true);
+  } catch {
+    // keep page index unchanged
+  }
+  updatePagerUI();
+}
+function goPrev() {
+  if (pageIndex <= 0) return;
+  pageIndex -= 1;
+  renderGallery(pages[pageIndex] || [], true);
+  updatePagerUI();
 }
 
 function renderGallery(items, reset = true) {
@@ -115,8 +175,7 @@ function bindEvents() {
     btn.addEventListener("click", () => {
       const sort = btn.dataset.sort;
       setActiveTab(sort);
-      nextCursor = "";
-      loadImages(sort, true);
+      resetPagination(sort);
     });
   });
   const lb = el("#lightbox");
@@ -195,21 +254,27 @@ function bindEvents() {
       }
     } catch {}
   })();
-  const sentinel = el("#sentinel");
-  const io = new IntersectionObserver(async (entries) => {
+  const prevBtn = el("#prevPage");
+  const nextBtn = el("#nextPage");
+  if (prevBtn) prevBtn.addEventListener("click", () => goPrev());
+  if (nextBtn) nextBtn.addEventListener("click", () => {
     const active = document.querySelector(".tab-btn.active")?.dataset.sort || "hot";
-    for (const entry of entries) {
-      if (entry.isIntersecting && nextCursor && !loadingMore) {
-        loadingMore = true;
-        try {
-          await loadImages(active, false);
-        } finally {
-          loadingMore = false;
-        }
-      }
-    }
+    goNext(active);
   });
-  io.observe(sentinel);
+  const pageNumbers = el("#pageNumbers");
+  if (pageNumbers) {
+    pageNumbers.addEventListener("click", (ev) => {
+      const btn = ev.target.closest(".page-num[data-idx]");
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.idx, 10);
+      if (!Number.isFinite(idx) || idx < 0) return;
+      if (pages[idx]) {
+        pageIndex = idx;
+        renderGallery(pages[pageIndex], true);
+        updatePagerUI();
+      }
+    });
+  }
 
   const showPreview = (file) => {
     const reader = new FileReader();
@@ -295,7 +360,7 @@ function bindEvents() {
       status.textContent = "上传成功";
       // Refresh current tab list
       const active = document.querySelector(".tab-btn.active")?.dataset.sort || "latest";
-      loadImages(active);
+      resetPagination(active);
       // reset input
       el("#fileInput").value = "";
       selectedFile = null;
@@ -313,8 +378,17 @@ function init() {
   setActiveTab("hot");
   bindEvents();
   setupLazyObserver();
-  nextCursor = "";
-  loadImages("hot", true);
+  resetPagination("hot");
+  (async () => {
+    try {
+      const r = await fetch("/api/count");
+      if (r.ok) {
+        const j = await r.json();
+        const sc = el("#siteCount");
+        if (sc) sc.textContent = `已存储 ${Number(j?.count || 0)} 张图片`;
+      }
+    } catch {}
+  })();
 }
 
 document.addEventListener("DOMContentLoaded", init);

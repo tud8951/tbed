@@ -20,6 +20,13 @@ async function loadSettings() {
   });
   el("#allowUpload").checked = !!s?.allow_upload;
   el("#filterEnable").checked = !!s?.filter_enabled;
+  const sel = el("#seSelect");
+  const users = Array.isArray(s?.sightengine_users) ? s.sightengine_users : [];
+  sel.innerHTML = users.length
+    ? users.map((u, i) => `<option value="${i}">${u}</option>`).join("")
+    : `<option value="0">未配置</option>`;
+  const idx = Number(s?.sightengine_index || 0);
+  sel.value = String(Math.min(Math.max(0, idx), Math.max(0, users.length - 1)));
 }
 
 function render(items) {
@@ -127,6 +134,23 @@ function bind() {
     } catch {
       st.textContent = "保存失败";
       ev.target.checked = !checked;
+    } finally {
+      setTimeout(() => st.textContent = "", 2000);
+    }
+  });
+  el("#seSelect").addEventListener("change", async (ev) => {
+    const idx = parseInt(ev.target.value, 10);
+    const st = el("#settingsStatus");
+    st.textContent = "保存中...";
+    try {
+      await fetchJSON("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ op: "set_sightengine_index", index: idx })
+      });
+      st.textContent = "已保存";
+    } catch {
+      st.textContent = "保存失败";
     } finally {
       setTimeout(() => st.textContent = "", 2000);
     }
