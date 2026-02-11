@@ -11,6 +11,11 @@ function formatTime(ts) {
 
 let nextCursor = "";
 let loadingMore = false;
+const cacheBust = (() => {
+  const m = (location.search || "").match(/[?&]cb=([^&]+)/);
+  return m ? decodeURIComponent(m[1]) : "";
+})();
+const addCb = (url) => cacheBust ? url + (url.indexOf("?") >= 0 ? "&" : "?") + "cb=" + encodeURIComponent(cacheBust) : url;
 
 async function loadImages(sort = "latest", reset = true) {
   const url = new URL(`/api/images`, window.location.origin);
@@ -34,11 +39,11 @@ function renderGallery(items, reset = true) {
     const isLiked = liked.includes(item.id);
     return `
       <article class="card" data-id="${item.id}">
-        <img class="lazy" data-src="/api/i/${item.id}?w=480&q=65" alt="image" loading="lazy" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
+        <img class="lazy" data-src="${addCb(`/api/i/${item.id}?w=480&q=65`)}" alt="image" loading="lazy" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
         <div class="meta">
           <span class="time">${formatTime(item.ts)}</span>
           <div class="actions">
-            <a class="download" href="/api/i/${item.id}" download="img-${item.id}.jpg">下载</a>
+            <a class="download" href="${addCb(`/api/i/${item.id}`)}" download="img-${item.id}.jpg">下载</a>
             <button class="like ${isLiked ? "liked" : ""}" data-id="${item.id}">❤️ <span class="count">${item.likes}</span></button>
           </div>
         </div>
@@ -93,7 +98,7 @@ function bindEvents() {
     const img = ev.target.closest(".card img");
     if (img) {
       const id = img.closest(".card")?.dataset.id;
-      lbImg.src = id ? `/api/i/${id}` : img.src;
+      lbImg.src = id ? addCb(`/api/i/${id}`) : img.src;
       lb.classList.remove("hidden");
       return;
     }
@@ -167,6 +172,14 @@ function bindEvents() {
   }, { rootMargin: "200px 0px" });
   function lazyLoadImages() {
     els("img.lazy").forEach(img => imgObserver.observe(img));
+  }
+  const rl = el("#reloadLink");
+  if (rl) {
+    rl.addEventListener("click", (e) => {
+      e.preventDefault();
+      const href = location.pathname + "?cb=" + Date.now();
+      location.replace(href);
+    });
   }
   const showPreview = (file) => {
     const reader = new FileReader();
