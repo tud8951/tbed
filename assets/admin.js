@@ -19,6 +19,7 @@ async function loadSettings() {
     headers: { Authorization: `Bearer ${token}` }
   });
   el("#allowUpload").checked = !!s?.allow_upload;
+  el("#filterEnable").checked = !!s?.filter_enabled;
 }
 
 function render(items) {
@@ -82,6 +83,24 @@ function bind() {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ op: "toggle_upload", allow_upload: checked })
+      });
+      st.textContent = "已保存";
+    } catch {
+      st.textContent = "保存失败";
+      ev.target.checked = !checked;
+    } finally {
+      setTimeout(() => st.textContent = "", 2000);
+    }
+  });
+  el("#filterEnable").addEventListener("change", async (ev) => {
+    const checked = ev.target.checked;
+    const st = el("#settingsStatus");
+    st.textContent = "保存中...";
+    try {
+      await fetchJSON("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ op: "toggle_filter", filter_enabled: checked })
       });
       st.textContent = "已保存";
     } catch {

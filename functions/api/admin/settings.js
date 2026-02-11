@@ -5,13 +5,18 @@ export async function onRequestGet({ request, env }) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
   }
   let allow = true;
+  let filter = false;
   if (env?.kv) {
     const v = await env.kv.get("settings:allow_upload");
     if (v !== null && v !== undefined) {
       allow = v === "1" || v === "true";
     }
+    const f = await env.kv.get("settings:filter_enabled");
+    if (f !== null && f !== undefined) {
+      filter = f === "1" || f === "true";
+    }
   }
-  return new Response(JSON.stringify({ allow_upload: allow }), { headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify({ allow_upload: allow, filter_enabled: filter }), { headers: { "Content-Type": "application/json" } });
 }
 
 export async function onRequestPost({ request, env }) {
@@ -28,6 +33,13 @@ export async function onRequestPost({ request, env }) {
       await env.kv.put("settings:allow_upload", allow ? "1" : "0");
     }
     return new Response(JSON.stringify({ allow_upload: allow }), { headers: { "Content-Type": "application/json" } });
+  }
+  if (op === "toggle_filter") {
+    const enable = !!body?.filter_enabled;
+    if (env?.kv) {
+      await env.kv.put("settings:filter_enabled", enable ? "1" : "0");
+    }
+    return new Response(JSON.stringify({ filter_enabled: enable }), { headers: { "Content-Type": "application/json" } });
   }
   if (op === "set_likes") {
     const id = body?.id;

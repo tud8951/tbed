@@ -85,12 +85,66 @@ export async function onRequestPost({ request, env }) {
       url = `${res.host}${json[0].src}`;
     }
 
-    if (env.TGBOT && env.TGGROUP) {
-      await fetch(`https://api.telegram.org/bot${env.TGBOT}/sendPhoto`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: env.TGGROUP, photo: url, disable_notification: true })
-      });
+    let filterEnabled = false;
+    if (env?.kv) {
+      const fv = await env.kv.get("settings:filter_enabled");
+      if (fv !== null && fv !== undefined) {
+        filterEnabled = fv === "1" || fv === "true";
+      }
+    }
+    if (filterEnabled) {
+      let ok = true;
+      let detail = "";
+      if (env?.SIGHTENGINE_USER && env?.SIGHTENGINE_KEY) {
+        try {
+          const usp = new URLSearchParams();
+          usp.set("models", "nudity");
+          usp.set("url", url);
+          usp.set("api_user", String(env.SIGHTENGINE_USER));
+          usp.set("api_secret", String(env.SIGHTENGINE_KEY));
+          const r = await fetch(`https://api.sightengine.com/1.0/check.json?${usp.toString()}`, { headers: { "Accept": "application/json" } });
+          if (r.ok) {
+            const j = await r.json().catch(() => null);
+            if (j && j.nudity) {
+              const n = j.nudity;
+              const raw = Number(n.raw) || 0;
+              const sa = Number(n.sexual_activity) || 0;
+              const sd = Number(n.sexual_display) || 0;
+              ok = raw < 0.3 && sa < 0.3 && sd < 0.3;
+              detail = JSON.stringify({ nudity: n });
+            }
+          }
+        } catch {}
+      } else if (env?.IMGSH) {
+        const base = String(env.IMGSH).replace(/\/+$/, "");
+        const targets = [];
+        try {
+          const host = new URL(base).host;
+          if (/moderatecontent\.com$/.test(host)) {
+            targets.push(`https://api.moderatecontent.com/moderate/?url=${encodeURIComponent(url)}`);
+          }
+        } catch {}
+        targets.push(`${base}/moderate?url=${encodeURIComponent(url)}`);
+        targets.push(`${base}/api/moderate?url=${encodeURIComponent(url)}`);
+        for (const t of targets) {
+          try {
+            const r = await fetch(t, { headers: { "Accept": "application/json" } });
+            if (!r.ok) continue;
+            const j = await r.json().catch(() => null);
+            if (!j) continue;
+            const ri = Number(j.rating_index);
+            const rating = String(j.rating || "").toLowerCase();
+            const pred = String(j.prediction || j.class || "").toLowerCase();
+            const blocked = (Number.isFinite(ri) && ri >= 3) || rating === "adult" || pred === "adult";
+            ok = !blocked;
+            detail = JSON.stringify({ rating_index: j.rating_index, rating: j.rating, prediction: j.prediction });
+            break;
+          } catch {}
+        }
+      }
+      if (!ok) {
+        return new Response(JSON.stringify({ error: "图片不符合社区规范", detail }), { status: 415, headers: { "Content-Type": "application/json" } });
+      }
     }
 
     const id = crypto.randomUUID();
@@ -104,6 +158,14 @@ export async function onRequestPost({ request, env }) {
     }
     if (env?.kv) {
       await env.kv.put(`image:${id}`, JSON.stringify(record));
+    }
+
+    if (env.TGBOT && env.TGGROUP) {
+      await fetch(`https://api.telegram.org/bot${env.TGBOT}/sendPhoto`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: env.TGGROUP, photo: url, disable_notification: true })
+      });
     }
 
     return new Response(JSON.stringify(record), { headers: { "Content-Type": "application/json" } });
